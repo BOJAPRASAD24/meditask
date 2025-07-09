@@ -1,19 +1,12 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import (
-    
-    UserViewSet,
-    DoctorViewSet,
-    AppointmentViewSet,
-    ReviewViewSet
-)
-
-router = DefaultRouter()
-router.register(r'users', UserViewSet)
-router.register(r'doctors', DoctorViewSet)
-router.register(r'appointments', AppointmentViewSet)
-router.register(r'reviews', ReviewViewSet)
+from django.urls import path
+from .views import *
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/user/', UserDetailView.as_view(), name='user_detail'),
+    path('api/appointments/', AppointmentView.as_view(), name='appointments'),
+    path('api/doctor-only/', DoctorOnlyView.as_view(), name='doctor_only'),
 ]
+

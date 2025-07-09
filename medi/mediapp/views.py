@@ -1,29 +1,44 @@
-from rest_framework import viewsets;
-from .models import User, Doctor, Appointment, Review;
-from .serializes import  (
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from .serializes import *
+from .models import *
 
-    UserSerializer,
-    DoctorSerializer,
-    AppointmentSerializer,
-    ReviewSerializer
-)
+class UserDetailView(APIView):
+    permission_classes = [IsAuthenticated]
 
-class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
+    def get(self, request):
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)
 
-class DoctorViewSet(viewsets.ModelViewSet):
-    queryset = Doctor.objects.all()
-    serializer_class = DoctorSerializer
+class DoctorOnlyView(APIView):
+    permission_classes = [IsAuthenticated]
 
-class AppointmentViewSet(viewsets.ModelViewSet):
-    queryset = Appointment.objects.all()
-    serializer_class = AppointmentSerializer
+    def get(self, request):
+        if request.user.role != 'doctor':
+            return Response({"detail": "Not authorized"})
+        return Response({"message": "Hello Doctor"})
 
-class ReviewViewSet(viewsets.ModelViewSet):
-    queryset = Review.objects.all()
-    serializer_class = ReviewSerializer
+class AppointmentView(APIView):
+    permission_classes = [IsAuthenticated]
 
+    def get(self, request):
+        if request.user.role == 'doctor':
+            appointments = Appointment.objects.filter(doctor=request.user)
+        else:
+            appointments = Appointment.objects.filter(patient=request.user)
+        serializer = AppointmentSerializer(appointments, many=True)
+        return Response(serializer.data)
 
+    def post(self, request):
+        if request.user.role != 'patient':
+            return Response({"detail": "Only patients can book appointments."})
+        data = request.data.copy()
+        data['patient'] = request.user.id
+        serializer = AppointmentSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data,)
+        return Response(serializer.errors,)
 
 

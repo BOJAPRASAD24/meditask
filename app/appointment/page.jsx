@@ -1,62 +1,65 @@
-'use client';
-import { useEffect, useState } from 'react';
-import { saveAppointment, fetchAppointments } from '@/lib/api';
+ 'use client';
 
-export default function AppointmentPage() {
-  const [form, setForm] = useState({ patient_id: '', doctor_id: '', datetime: '' });
+import { useEffect, useState } from 'react';
+import { fetchAppointments, saveAppointment } from '@/lib/api';
+import withAuth from '@/hoc/withAuth';
+
+function AppointmentPage() {
+  const [form, setForm] = useState({ doctor_id: '', datetime: '' });
   const [appointments, setAppointments] = useState([]);
 
-  useEffect(() => { fetchAppointments().then(setAppointments); }, []);
+  useEffect(() => {
+    const loadAppointments = async () => {
+      const data = await fetchAppointments();
+      setAppointments(data);
+    };
+    loadAppointments();
+  }, []);
 
-  const handleChange = (e) => setForm({ form, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     await saveAppointment(form);
-    setForm({ patient_id: '', doctor_id: '', datetime: '' });
+    setForm({ doctor_id: '', datetime: '' });
+
     const updated = await fetchAppointments();
     setAppointments(updated);
   };
 
   return (
-    <main className="min-h-screen bg-gray-100 py-8 px-4">
+    <main className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-lg mx-auto">
         <form onSubmit={handleSubmit} className="bg-white shadow-md rounded p-6 space-y-4">
           <h2 className="text-xl font-bold">Book Appointment</h2>
-          <input
-            name="patient_id"
-            value={form.patient_id}
-            onChange={handleChange}
-            placeholder="Patient ID"
-            className="input"
-          />
           <input
             name="doctor_id"
             value={form.doctor_id}
             onChange={handleChange}
             placeholder="Doctor ID"
-            className="input"
+            className="input w-full p-2 border rounded"
           />
           <input
+            type="datetime-local"
             name="datetime"
             value={form.datetime}
             onChange={handleChange}
-            type="datetime-local"
-            className="input"
+            className="input w-full p-2 border rounded"
           />
-          <button type="submit" className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700">
-            Schedule
+          <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+            Book
           </button>
         </form>
 
         <div className="mt-10">
-          <h3 className="text-lg font-semibold mb-4">Appointments</h3>
+          <h3 className="text-lg font-semibold mb-4">Your Appointments</h3>
           <ul className="space-y-2">
             {appointments.map((appt) => (
               <li key={appt.id} className="bg-white p-4 rounded shadow">
-                <p><strong>Patient ID:</strong> {appt.patient_id}</p>
-                <p><strong>Doctor ID:</strong> {appt.doctor_id}</p>
-                <p><strong>Date/Time:</strong> {appt.datetime}</p>
+                <p><strong>Doctor:</strong> {appt.doctor.username}</p>
+                <p><strong>Time:</strong> {new Date(appt.datetime).toLocaleString()}</p>
               </li>
             ))}
           </ul>
@@ -65,3 +68,6 @@ export default function AppointmentPage() {
     </main>
   );
 }
+
+export default withAuth(AppointmentPage);
+

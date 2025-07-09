@@ -1,36 +1,40 @@
-"use client";
-
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../lib/firebase';
 
-const withAuth = (Component) => {
-  return function AuthenticatedComponent(props) {
+const withAuth = (WrappedComponent, roleRequired = null) => {
+  return function ProtectedRoute(props) {
     const router = useRouter();
-    const [loading, setLoading] = useState(true);
-    const [authenticated, setAuthenticated] = useState(false);
+    const [authorized, setAuthorized] = useState(false);
 
     useEffect(() => {
-      const unsubscribe = onAuthStateChanged(auth, (user) => {
-        if (user) {
-          setAuthenticated(true);
-        } else {
-          router.push('/auth'); 
-    // redirect to login
-        }
-        setLoading(false);
-      });
+      const token = localStorage.getItem("access");
+      if (!token) {
+        router.push("/login");
+        return;
+      }
 
-      return () => unsubscribe();
-    }, [router]);
+      fetch("http://localhost:8000/api/user/", {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(res => {
+          if (!res.ok) throw new Error("Unauthorized");
+          return res.json();
+        })
+        .then(user => {
+          if (roleRequired && user.role !== roleRequired) {
+            router.push("/not-authorized");
+          } else {
+            setAuthorized(true);
+          }
+        })
+        .catch(() => router.push("/login"));
+    }, []);
 
-    if (loading) {
-      return <p>Loading...</p>;
-    }
-
-    return authenticated ? <Component { ...props } /> : null;
+    return authorized ? <WrappedComponent {...props} /> : null;
   };
 };
 
 export default withAuth;
+
+
+

@@ -1,18 +1,30 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { auth } from '../lib/firebase';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
 
 export default function AuthForm() {
-  const [email, setEmail] = useState();
-  const [password, setPassword] = useState();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLogin, setIsLogin] = useState(true);
-  const [error, setError] = useState();
+  const [error, setError] = useState(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        router.push('/user'); 
+        // Redirect to protected user page
+      }
+    });
+    return () => unsubscribe();
+  }, [router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError();
+    setError(null);
 
     try {
       if (isLogin) {
@@ -20,13 +32,15 @@ export default function AuthForm() {
       } else {
         await createUserWithEmailAndPassword(auth, email, password);
       }
+
+      router.push('/user');
+       // redirect after login/register
     } catch (err) {
       setError(err.message);
     }
   };
 
   return (
-    
     <div className="max-w-md mx-auto mt-10 p-6 border border-gray-300 rounded-lg shadow-md">
       <h2 className="text-2xl font-bold text-center mb-4">
         {isLogin ? 'Login' : 'Register'}
@@ -70,4 +84,5 @@ export default function AuthForm() {
     </div>
   );
 }
+
 

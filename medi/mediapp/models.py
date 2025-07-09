@@ -1,6 +1,7 @@
+from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-class User(models.Model):
+class CustomUser(AbstractUser):
     ROLE_CHOICES = (
         ('patient', 'Patient'),
         ('admin', 'Admin'),
@@ -23,7 +24,7 @@ class Doctor(models.Model):
         return self.name
 
 class Appointment(models.Model):
-    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='appointments')
+    patient = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='appointments')
     doctor = models.ForeignKey(Doctor, on_delete=models.CASCADE, related_name='appointments')
     datetime = models.DateTimeField()
 
